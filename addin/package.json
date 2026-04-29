@@ -1,0 +1,17 @@
+{
+  "name": "excel-ai-assistant-addin",
+  "version": "0.1.0",
+  "description": "Office.js Excel add-in that pairs with a FastAPI backend for AI-driven spreadsheet commands.",
+  "private": true,
+  "scripts": {
+    "cert": "office-addin-dev-certs install --days 365",
+    "cert:path": "office-addin-dev-certs verify",
+    "start": "http-server ./src -p 3000 --ssl --cert $HOME/.office-addin-dev-certs/localhost.crt --key $HOME/.office-addin-dev-certs/localhost.key --cors -c-1",
+    "validate": "office-addin-manifest validate manifest.xml"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "office-addin-dev-certs": "^2.0.7",
+    "office-addin-manifest": "^2.1.3"
+  }
+}
