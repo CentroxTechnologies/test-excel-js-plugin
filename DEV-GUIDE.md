@@ -168,17 +168,15 @@ There are no automated tests yet. Manual checks:
 
 ---
 
-## What's NOT built yet (the real work)
+## Not built yet
 
-This scaffold maps to Phase 1 / Week 1-2 of the spec. Still to build:
-
-1. **Saved workflows**, record sequences of actions, name them, replay on new data, edit. The killer feature vs Copilot.
-2. **Scheduling**, cron + email notifications (Office.js can't run when Excel is closed)
-3. **Multi-LLM routing**, task classifier picks GPT-mini for simple, Claude for complex, Gemini for large data, Azure OpenAI for sensitive
-4. **Real validation pipeline**, current validator does ~30% of the spec. Missing reference checks, type checks, range completeness, test execution, reasonableness
-5. **Audit trail**, DB-persisted log of every action with user, model, prompt, formula, result
-6. **Confidence-driven UX**, auto-apply for high-confidence, sidebar-only for low-confidence
-7. **Edge cases**, merged cells, multiple header rows, hidden rows, pivot tables, mixed types
+1. **Saved workflows**: record sequences of actions, name them, replay on new data, edit.
+2. **Scheduling**: cron triggers and email notifications (Office.js can't run when Excel is closed).
+3. **Multi-LLM routing**: task classifier picks GPT-mini for simple, Claude for complex, Gemini for large data, Azure OpenAI for sensitive.
+4. **Real validation pipeline**: reference checks, type checks, range completeness, test execution, reasonableness checks.
+5. **Audit trail**: DB-persisted log of every action with user, model, prompt, formula, result.
+6. **Confidence-driven UX**: auto-apply for high-confidence, sidebar-only for low-confidence.
+7. **Edge cases**: merged cells, multiple header rows, hidden rows, pivot tables, mixed types.
 
 Full spec: `/home/adeel/centrox/projects-overview/excel-project/CLIENT_REQUIREMENTS.md`.
 Sequenced backlog: `/home/adeel/centrox/projects-overview/excel-project/SUMMARY/03-NEXT-STEPS.md`.

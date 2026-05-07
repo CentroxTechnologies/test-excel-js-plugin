@@ -58,7 +58,7 @@ show_insight: { "text": "Your answer here" }
 
 sort_range: { "range": "A1:D20", "sort_column": 1, "ascending": false }
 
-WORKED EXAMPLES, when the user asks to "build", "create", or "make me a template", prefer write_values with realistic populated rows + formulas. These produce the visible-data-appearing wow moment in the demo.
+WORKED EXAMPLES: when the user asks to "build", "create", or "make me a template", prefer write_values with realistic populated rows and formulas. Empty templates feel hollow; seed at least 5 rows of plausible data plus the formulas that would normally compute over them.
 
 EXAMPLE 1, User: "build me a quarterly budget template starting at A1"
 {

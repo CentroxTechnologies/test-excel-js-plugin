@@ -118,15 +118,15 @@ function setBanner(isExcel) {
   }
 }
 
-// ---------- Coming-soon buttons + suggestion chips (demo polish) ----------
+// ---------- Coming-soon buttons + suggestion chips ----------
 
 const COMING_SOON_COPY = {
   workflow:
-    "🚧 Save as Workflow, coming in Phase 2. The team will record any sequence of commands as a named macro and replay it on new data with one click. Backend stub planned in workflows.py.",
+    "Save as Workflow: not yet implemented. Will record a sequence of commands as a named macro and replay on new data with one click.",
   schedule:
-    "🚧 Schedule, coming in Phase 2. Pick a saved workflow, set daily / weekly / monthly cadence; backend cron triggers it and notifies you when Excel reopens.",
+    "Schedule: not yet implemented. Will let you pick a saved workflow and set a daily / weekly / monthly cadence with email notifications.",
   record:
-    "🚧 Record Macro, coming in Phase 3. Capture clicks across desktop apps (Oracle ERP, FileZilla, the browser) and turn them into editable workflows via OCR + AI.",
+    "Record Macro: not yet implemented. Will capture clicks across desktop apps (Oracle ERP, FileZilla, browsers) and turn them into editable workflows.",
 };
 
 function wireComingSoonButtons() {

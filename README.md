@@ -30,7 +30,7 @@ If the upload option is missing, your Microsoft account is a personal tier, Micr
 
 ---
 
-## Try the demo (60 seconds)
+## Try the demo
 
 Add some sample data first, `Name`, `Sales`, `Region`, `Quarter` columns work great. Or click any **suggestion chip** above the input to skip the setup.
 
@@ -50,7 +50,7 @@ Each AI action shows a preview card, review it, click **Apply**, watch the sheet
 
 ---
 
-## How it works (the 30-second tour)
+## How it works
 
 ```
 You type a command in the sidebar
@@ -115,7 +115,7 @@ Two paths depending on whether you want the deployed plugin or your local copy t
 
 **Option B, keep using the deployed plugin:**
 1. Set `USE_LOCAL_ENGINE = false` in `addin/src/taskpane/taskpane.js`
-2. Push the change to the `gh-pages` branch (the live site updates in ~30 sec)
+2. Push the change to the `gh-pages` branch and the live site picks up the new code automatically
 3. Backend must be reachable from the deployed plugin. Localhost works from HTTPS pages on most browsers (special exception); if it breaks, run `ngrok http 8001` and put the ngrok URL in `BACKEND_URL` at the top of `taskpane.js`
 
 ---
@@ -161,15 +161,15 @@ officejs/
 
 ## Roadmap
 
-This scaffold is Phase-1 / Week-1-2 of the spec. Still to build, in priority order:
+Not yet implemented:
 
-1. **Saved workflows**, record a sequence of commands as a named macro, replay on new data, edit later. The killer feature vs Microsoft Copilot.
-2. **Scheduling**, cron triggers + email notification flow (Office.js can't run when Excel is closed)
-3. **Real validation pipeline**, current `validator.py` does ~30% of the spec. Missing reference checks, type checks, range completeness, test execution, reasonableness checks.
-4. **Multi-LLM routing**, task classifier picks GPT-mini for simple, Claude for complex, Gemini for large data, Azure OpenAI for sensitive
-5. **Audit trail**, DB-persisted log of every action for finance/compliance buyers
-6. **Confidence-driven UX**, auto-apply for high-confidence, sidebar-only for low-confidence
-7. **Edge cases**, merged cells, multiple header rows, hidden rows, pivot tables, mixed-type columns
+1. **Saved workflows**: record a sequence of commands as a named macro, replay on new data, edit later.
+2. **Scheduling**: cron triggers and email notifications for workflow runs.
+3. **Real validation pipeline**: reference checks, type checks, range completeness, test execution, reasonableness checks.
+4. **Multi-LLM routing**: task classifier picks the right model per request (GPT-mini, Claude, Gemini, Azure OpenAI).
+5. **Audit trail**: DB-persisted log of every action.
+6. **Confidence-driven UX**: auto-apply for high-confidence, sidebar-only for low-confidence.
+7. **Edge cases**: merged cells, multiple header rows, hidden rows, pivot tables, mixed-type columns.
 
 How to add a new action type, switch providers, etc.: see [DEV-GUIDE.md](./DEV-GUIDE.md).
 
@@ -177,7 +177,7 @@ How to add a new action type, switch providers, etc.: see [DEV-GUIDE.md](./DEV-G
 
 ## Troubleshooting
 
-**Sidebar shows blank page or "can't reach server".** First time only: open `https://centroxtechnologies.github.io/test-excel-js-plugin/taskpane/taskpane.html` in a browser to confirm the page loads. If it doesn't, GitHub Pages may still be deploying, wait 30 sec and retry.
+**Sidebar shows blank page or "can't reach server".** First time only: open `https://centroxtechnologies.github.io/test-excel-js-plugin/taskpane/taskpane.html` in a browser to confirm the page loads. If it doesn't, GitHub Pages may still be deploying; wait a moment and retry.
 
 **Sidebar shows "Couldn't process that".** Backend isn't reachable. Either flip `USE_LOCAL_ENGINE = true` in `taskpane.js` (and redeploy gh-pages) or start the backend with `uvicorn main:app --port 8001`.
 
