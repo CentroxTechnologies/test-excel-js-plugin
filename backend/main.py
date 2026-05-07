@@ -15,7 +15,7 @@ from ai_engine import generate_action
 from validator import validate_action
 
 
-app = FastAPI(title="Excel AI Assistant", version="0.1.0")
+app = FastAPI(title="PowerPair", version="0.1.0")
 
 
 # Wide-open CORS for development. Tighten this for production (specific origins + methods).

@@ -1,4 +1,4 @@
-# Developer Guide — Excel AI Assistant scaffold
+# Developer Guide — PowerPair scaffold
 
 You're picking up a working Office.js add-in scaffold. This doc explains what's here, how to run it, and where to plug in real logic.
 

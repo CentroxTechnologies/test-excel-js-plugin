@@ -8,10 +8,10 @@
 
   <Id>3a8c1b9e-7d2f-4e5a-b6c4-1f9a8e2d5b7c</Id>
   <Version>0.1.0.0</Version>
-  <ProviderName>Excel AI Assistant</ProviderName>
+  <ProviderName>PowerPair</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Excel AI Assistant"/>
-  <Description DefaultValue="Talk to your spreadsheet. Type plain English, the AI generates Excel formulas, Excel computes them."/>
+  <DisplayName DefaultValue="PowerPair"/>
+  <Description DefaultValue="PowerPair — simple like ChatGPT, accurate like a formula, safe like an audit trail. Talk to your spreadsheet in plain English; the AI writes formulas, Excel computes them."/>
   <IconUrl DefaultValue="https://centroxtechnologies.github.io/test-excel-js-plugin/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://centroxtechnologies.github.io/test-excel-js-plugin/assets/icon-64.png"/>
   <SupportUrl DefaultValue="https://centroxtechnologies.github.io/test-excel-js-plugin"/>
@@ -86,13 +86,13 @@
         <bt:Url id="Taskpane.Url" DefaultValue="https://centroxtechnologies.github.io/test-excel-js-plugin/taskpane/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GetStarted.Title" DefaultValue="Excel AI Assistant is ready."/>
-        <bt:String id="CommandsGroup.Label" DefaultValue="AI Assistant"/>
-        <bt:String id="TaskpaneButton.Label" DefaultValue="Open Assistant"/>
+        <bt:String id="GetStarted.Title" DefaultValue="PowerPair is ready."/>
+        <bt:String id="CommandsGroup.Label" DefaultValue="PowerPair"/>
+        <bt:String id="TaskpaneButton.Label" DefaultValue="Open PowerPair"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="GetStarted.Description" DefaultValue="Click the AI Assistant button on the Home tab to open the sidebar."/>
-        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Open the AI assistant sidebar and start typing commands."/>
+        <bt:String id="GetStarted.Description" DefaultValue="Click the PowerPair button on the Home tab to open the sidebar."/>
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Open PowerPair and start typing commands in plain English."/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

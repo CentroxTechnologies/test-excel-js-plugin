@@ -57,6 +57,70 @@ Valid chart types: ColumnClustered, ColumnStacked, BarClustered, Line, Pie, Area
 show_insight: { "text": "Your answer here" }
 
 sort_range: { "range": "A1:D20", "sort_column": 1, "ascending": false }
+
+WORKED EXAMPLES — when the user asks to "build", "create", or "make me a template", prefer write_values with realistic populated rows + formulas. These produce the visible-data-appearing wow moment in the demo.
+
+EXAMPLE 1 — User: "build me a quarterly budget template starting at A1"
+{
+  "action_type": "write_values",
+  "params": {
+    "start_cell": "A1",
+    "values": [
+      ["Category", "Q1", "Q2", "Q3", "Q4", "Total"],
+      ["Revenue", 50000, 65000, 72000, 81000, "=SUM(B2:E2)"],
+      ["Cost of goods sold", 20000, 26000, 28800, 32400, "=SUM(B3:E3)"],
+      ["Gross profit", "=B2-B3", "=C2-C3", "=D2-D3", "=E2-E3", "=SUM(B4:E4)"],
+      ["Salaries", 12000, 12500, 13000, 13500, "=SUM(B5:E5)"],
+      ["Marketing", 4000, 5500, 6000, 7000, "=SUM(B6:E6)"],
+      ["Rent", 6000, 6000, 6000, 6000, "=SUM(B7:E7)"],
+      ["Utilities", 1500, 1500, 1700, 1700, "=SUM(B8:E8)"],
+      ["Other expenses", 2000, 2200, 2400, 2600, "=SUM(B9:E9)"],
+      ["Total expenses", "=SUM(B5:B9)", "=SUM(C5:C9)", "=SUM(D5:D9)", "=SUM(E5:E9)", "=SUM(B10:E10)"],
+      ["Net profit", "=B4-B10", "=C4-C10", "=D4-D10", "=E4-E10", "=SUM(B11:E11)"]
+    ]
+  },
+  "preview_text": "Insert an 11-row quarterly budget template at A1 with totals, gross profit, and net profit formulas.",
+  "confidence": 0.95
+}
+
+EXAMPLE 2 — User: "add a tax column at 8.5% next to sales" (assume Sales is column B with 5 data rows)
+The tax column goes in the next empty column (e.g. column D if A=Name, B=Sales, C=Region). Header in row 1, formula =B2*0.085 in each populated row.
+{
+  "action_type": "write_values",
+  "params": {
+    "start_cell": "D1",
+    "values": [
+      ["Tax (8.5%)"],
+      ["=B2*0.085"],
+      ["=B3*0.085"],
+      ["=B4*0.085"],
+      ["=B5*0.085"]
+    ]
+  },
+  "preview_text": "Add a Tax column in D with 8.5% formulas referencing Sales values in column B.",
+  "confidence": 0.92
+}
+
+EXAMPLE 3 — User: "make a sales tracker template"
+{
+  "action_type": "write_values",
+  "params": {
+    "start_cell": "A1",
+    "values": [
+      ["Date", "Customer", "Product", "Quantity", "Unit Price", "Total"],
+      ["2026-01-15", "Acme Corp", "Widget Pro", 10, 49.99, "=D2*E2"],
+      ["2026-01-18", "Globex Inc", "Widget Lite", 25, 19.99, "=D3*E3"],
+      ["2026-01-22", "Initech", "Widget Pro", 5, 49.99, "=D4*E4"],
+      ["2026-01-25", "Umbrella Co", "Widget Max", 50, 89.99, "=D5*E5"],
+      ["2026-01-29", "Acme Corp", "Widget Lite", 100, 19.99, "=D6*E6"],
+      ["", "", "", "", "Grand Total", "=SUM(F2:F6)"]
+    ]
+  },
+  "preview_text": "Insert a 6-row sales tracker template with line totals and a grand total formula.",
+  "confidence": 0.93
+}
+
+When in doubt about a "build / create / make" request, default to write_values with at least 5 rows of realistic seed data plus formulas — empty templates feel hollow.
 """
 
 
