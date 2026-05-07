@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Excel AI Assistant</title>
+  <title>PowerPair</title>
 
   <!-- Office.js must come from the CDN so the host can inject the Excel context. -->
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
@@ -12,10 +12,10 @@
 </head>
 <body>
   <header class="app-header">
-    <div class="logo" aria-hidden="true">AI</div>
+    <div class="logo" aria-hidden="true">PP</div>
     <div class="title-block">
-      <h1>Excel AI Assistant</h1>
-      <p class="subtitle">Ask in plain English. Preview before it runs.</p>
+      <h1>PowerPair</h1>
+      <p class="subtitle">Simple like ChatGPT. Accurate like a formula.</p>
     </div>
   </header>
 
@@ -33,14 +33,28 @@
     </div>
   </section>
 
+  <section class="coming-soon-row" aria-label="Upcoming features">
+    <button class="coming-btn" type="button" data-feature="workflow">
+      <span class="badge">🚧</span> Save as Workflow
+    </button>
+    <button class="coming-btn" type="button" data-feature="schedule">
+      <span class="badge">🚧</span> Schedule
+    </button>
+    <button class="coming-btn" type="button" data-feature="record">
+      <span class="badge">🚧</span> Record Macro
+    </button>
+  </section>
+
   <main id="chat" class="chat" aria-live="polite"></main>
+
+  <section class="suggestion-chips" id="suggestion-chips" aria-label="Quick prompts"></section>
 
   <footer class="input-bar">
     <textarea
       id="input"
       class="input"
       rows="1"
-      placeholder="Try: sum column revenue"
+      placeholder="Try: build a quarterly budget"
       aria-label="Type a command"
     ></textarea>
     <button id="send" class="send" type="button" aria-label="Send">Send</button>

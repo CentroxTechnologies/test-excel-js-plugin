@@ -1,5 +1,5 @@
 /**
- * Taskpane logic for the Excel AI Assistant sidebar.
+ * Taskpane logic for the PowerPair sidebar.
  *
  * Two modes:
  *   1. Excel mode — running inside the Excel host. Uses real Office.js.
@@ -17,9 +17,9 @@
 const BACKEND_URL = "http://localhost:8001";
 
 // When true, the sidebar handles requests with a tiny local pattern-matcher and
-// the backend is not contacted. Junior dev: flip this to false once the FastAPI
-// backend is running and configured with an API key. See DEV-GUIDE.md.
-const USE_LOCAL_ENGINE = true;
+// the backend is not contacted. Flip this to false to route every command
+// through the FastAPI backend + real LLM. See DEV-GUIDE.md.
+const USE_LOCAL_ENGINE = false;
 
 // Cached DOM refs.
 let chatEl = null;
@@ -61,20 +61,23 @@ async function boot() {
   sendBtn.addEventListener("click", onSendClicked);
   inputEl.addEventListener("keydown", onKeyDown);
 
+  wireComingSoonButtons();
+  renderSuggestionChips();
+
   const info = await detectHost(2000);
   const insideExcel = info && info.host === Office.HostType.Excel;
 
   if (insideExcel) {
     setBanner(true);
     renderSystemMessage(
-      "Hi. Try 'sum column revenue', 'sort by name', or 'highest value in revenue'."
+      "Hi. Tap a chip below or type something like 'build a quarterly budget' or 'sum column sales'."
     );
   } else {
     mockMode = true;
     setBanner(false);
     initMockSheet();
     renderSystemMessage(
-      "Browser preview. Try 'sum column sales', 'sort by sales', 'format headers', or 'highest in sales'."
+      "Browser preview. Tap a chip below or try 'sum column sales', 'sort by sales', or 'highlight headers in blue'."
     );
   }
 }
@@ -112,6 +115,54 @@ function setBanner(isExcel) {
     banner.textContent =
       "Browser Preview Mode — connect to Excel for full functionality";
     banner.className = "mode-banner banner-mock";
+  }
+}
+
+// ---------- Coming-soon buttons + suggestion chips (demo polish) ----------
+
+const COMING_SOON_COPY = {
+  workflow:
+    "🚧 Save as Workflow — coming in Phase 2. The team will record any sequence of commands as a named macro and replay it on new data with one click. Backend stub planned in workflows.py.",
+  schedule:
+    "🚧 Schedule — coming in Phase 2. Pick a saved workflow, set daily / weekly / monthly cadence; backend cron triggers it and notifies you when Excel reopens.",
+  record:
+    "🚧 Record Macro — coming in Phase 3. Capture clicks across desktop apps (Oracle ERP, FileZilla, the browser) and turn them into editable workflows via OCR + AI.",
+};
+
+function wireComingSoonButtons() {
+  document.querySelectorAll(".coming-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const feature = btn.dataset.feature;
+      const text = COMING_SOON_COPY[feature] || "🚧 Coming soon.";
+      renderAiMessage(text);
+    });
+  });
+}
+
+const SUGGESTION_CHIPS = [
+  "Build a quarterly budget",
+  "Make a sales tracker",
+  "Add a tax column at 8.5%",
+  "Sum column sales",
+  "Sort by revenue descending",
+  "Highlight headers in blue",
+  "Create a column chart",
+];
+
+function renderSuggestionChips() {
+  const host = document.getElementById("suggestion-chips");
+  if (!host) return;
+  host.innerHTML = "";
+  for (const text of SUGGESTION_CHIPS) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    chip.textContent = text;
+    chip.addEventListener("click", () => {
+      inputEl.value = text;
+      onSendClicked();
+    });
+    host.appendChild(chip);
   }
 }
 
