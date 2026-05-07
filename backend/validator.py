@@ -1,5 +1,5 @@
 """
-Validator — the last line of defense before an AI action reaches the add-in.
+Validator, the last line of defense before an AI action reaches the add-in.
 
 Every response from the AI engine passes through `validate_action()`. If something
 looks off (malformed formula, bad range, unknown chart type), we swap it for a
@@ -13,21 +13,21 @@ from models import ProcessResponse
 # ---------------------------------------------------------------------------
 # PLANNED v2 VALIDATION PIPELINE
 # ---------------------------------------------------------------------------
-# Today's checks are structural — they confirm the action's shape is reasonable.
+# Today's checks are structural, they confirm the action's shape is reasonable.
 # Once the real LLM is wired up, we'll layer on:
 #
-#   1. Formula syntax check — parse the formula through a lightweight AST (e.g.
+#   1. Formula syntax check, parse the formula through a lightweight AST (e.g.
 #      openpyxl.formula or a tree-sitter grammar) to catch unbalanced parens,
 #      unknown function names, bad argument counts.
 #
-#   2. Reference bounds check — ensure cell references in formulas point to
+#   2. Reference bounds check, ensure cell references in formulas point to
 #      cells that actually exist in the sheet (compare against sheet_data
 #      dimensions).
 #
-#   3. Type check — if the formula expects numerics (SUM, AVERAGE), verify the
+#   3. Type check, if the formula expects numerics (SUM, AVERAGE), verify the
 #      referenced columns actually contain numeric data.
 #
-#   4. Circular reference detection — flag formulas that reference their own
+#   4. Circular reference detection, flag formulas that reference their own
 #      target cell (directly or transitively through other pending actions).
 #
 # Each layer returns the same ProcessResponse shape; on failure, we replace the

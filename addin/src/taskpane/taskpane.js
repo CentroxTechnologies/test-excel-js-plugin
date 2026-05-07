@@ -2,14 +2,14 @@
  * Taskpane logic for the PowerPair sidebar.
  *
  * Two modes:
- *   1. Excel mode — running inside the Excel host. Uses real Office.js.
- *   2. Mock mode — running in a plain browser. Uses an editable mock
+ *   1. Excel mode, running inside the Excel host. Uses real Office.js.
+ *   2. Mock mode, running in a plain browser. Uses an editable mock
  *      spreadsheet rendered in the page for demos and local testing.
  *
  * Detection: Office.onReady is raced against a 2-second timeout. If Excel
  * never announces itself, we fall back to mock mode.
  *
- * The send/preview/apply flow is identical in both modes — only the
+ * The send/preview/apply flow is identical in both modes, only the
  * sheet-reading and action-application layers differ.
  */
 
@@ -41,7 +41,7 @@ const MOCK_SEED = [
   ["Bilal", 6800, "East", "Q3"],
 ];
 
-// Mock sheet state — the currently "selected" cell and the rendered <table> ref.
+// Mock sheet state, the currently "selected" cell and the rendered <table> ref.
 let mockActiveCell = "A1";
 let mockSheetEl = null;
 
@@ -98,7 +98,7 @@ function detectHost(timeoutMs) {
           if (info && info.host) finish(info);
         });
       } catch (_err) {
-        // Office.js failed to initialize — fall through to the timeout.
+        // Office.js failed to initialize, fall through to the timeout.
       }
     }
   });
@@ -113,7 +113,7 @@ function setBanner(isExcel) {
     banner.className = "mode-banner banner-excel";
   } else {
     banner.textContent =
-      "Browser Preview Mode — connect to Excel for full functionality";
+      "Browser Preview Mode, connect to Excel for full functionality";
     banner.className = "mode-banner banner-mock";
   }
 }
@@ -122,11 +122,11 @@ function setBanner(isExcel) {
 
 const COMING_SOON_COPY = {
   workflow:
-    "🚧 Save as Workflow — coming in Phase 2. The team will record any sequence of commands as a named macro and replay it on new data with one click. Backend stub planned in workflows.py.",
+    "🚧 Save as Workflow, coming in Phase 2. The team will record any sequence of commands as a named macro and replay it on new data with one click. Backend stub planned in workflows.py.",
   schedule:
-    "🚧 Schedule — coming in Phase 2. Pick a saved workflow, set daily / weekly / monthly cadence; backend cron triggers it and notifies you when Excel reopens.",
+    "🚧 Schedule, coming in Phase 2. Pick a saved workflow, set daily / weekly / monthly cadence; backend cron triggers it and notifies you when Excel reopens.",
   record:
-    "🚧 Record Macro — coming in Phase 3. Capture clicks across desktop apps (Oracle ERP, FileZilla, the browser) and turn them into editable workflows via OCR + AI.",
+    "🚧 Record Macro, coming in Phase 3. Capture clicks across desktop apps (Oracle ERP, FileZilla, the browser) and turn them into editable workflows via OCR + AI.",
 };
 
 function wireComingSoonButtons() {
@@ -200,7 +200,7 @@ async function onSendClicked() {
 }
 
 // Read everything the backend needs to understand the sheet right now.
-// Branches on mode — mock reads from the DOM table, Excel reads via Office.js.
+// Branches on mode, mock reads from the DOM table, Excel reads via Office.js.
 async function readSheetContext() {
   if (mockMode) return readMockSheetContext();
   return Excel.run(async (ctx) => {
@@ -222,7 +222,7 @@ async function readSheetContext() {
       headers = sheetData.length > 0 ? sheetData[0] : [];
     }
 
-    // activeCell.address looks like "Sheet1!B5" — strip the sheet prefix.
+    // activeCell.address looks like "Sheet1!B5", strip the sheet prefix.
     const rawAddress = activeCell.address || "A1";
     const bareCell = rawAddress.includes("!") ? rawAddress.split("!")[1] : rawAddress;
 
@@ -237,7 +237,7 @@ async function readSheetContext() {
 
 // POST the user's command + sheet context to the backend.
 // If USE_LOCAL_ENGINE is true, skip the network and run a local pattern-matcher
-// instead — the plugin works without any backend for sideload demos.
+// instead, the plugin works without any backend for sideload demos.
 async function postToBackend(message, context) {
   if (USE_LOCAL_ENGINE) {
     return localEngine(message, context);
@@ -464,7 +464,7 @@ function renderThinking() {
   return el;
 }
 
-// Preview card with Apply / Cancel buttons — the core "preview before execute" pattern.
+// Preview card with Apply / Cancel buttons, the core "preview before execute" pattern.
 function renderActionCard(response) {
   const card = document.createElement("div");
   card.className = "action-card";
@@ -600,7 +600,7 @@ async function applySortRange({ range, sort_column, ascending }) {
     target.sort.apply(
       [{ key: sort_column, ascending: Boolean(ascending) }],
       false, // matchCase
-      true,  // hasHeaders — we assume row 1 is headers
+      true,  // hasHeaders, we assume row 1 is headers
       Excel.SortOrientation.rows
     );
     await ctx.sync();
@@ -729,7 +729,7 @@ function applyMockInsertFormula({ cell, formula }) {
   const td = findMockCell(cell);
   if (!td) throw new Error(`cell ${cell} is outside the mock sheet`);
   td.textContent = formula;
-  td.title = "Formula — would compute inside real Excel.";
+  td.title = "Formula, would compute inside real Excel.";
   flashCell(td);
 }
 

@@ -1,5 +1,5 @@
 """
-AI engine — turns the user's plain English Excel command into a structured
+AI engine, turns the user's plain English Excel command into a structured
 ProcessResponse via a real LLM call (OpenAI or Anthropic, switchable via .env).
 
 The validator (validator.py) is the next layer; we deliberately don't sanitize
@@ -58,9 +58,9 @@ show_insight: { "text": "Your answer here" }
 
 sort_range: { "range": "A1:D20", "sort_column": 1, "ascending": false }
 
-WORKED EXAMPLES — when the user asks to "build", "create", or "make me a template", prefer write_values with realistic populated rows + formulas. These produce the visible-data-appearing wow moment in the demo.
+WORKED EXAMPLES, when the user asks to "build", "create", or "make me a template", prefer write_values with realistic populated rows + formulas. These produce the visible-data-appearing wow moment in the demo.
 
-EXAMPLE 1 — User: "build me a quarterly budget template starting at A1"
+EXAMPLE 1, User: "build me a quarterly budget template starting at A1"
 {
   "action_type": "write_values",
   "params": {
@@ -83,7 +83,7 @@ EXAMPLE 1 — User: "build me a quarterly budget template starting at A1"
   "confidence": 0.95
 }
 
-EXAMPLE 2 — User: "add a tax column at 8.5% next to sales" (assume Sales is column B with 5 data rows)
+EXAMPLE 2, User: "add a tax column at 8.5% next to sales" (assume Sales is column B with 5 data rows)
 The tax column goes in the next empty column (e.g. column D if A=Name, B=Sales, C=Region). Header in row 1, formula =B2*0.085 in each populated row.
 {
   "action_type": "write_values",
@@ -101,7 +101,7 @@ The tax column goes in the next empty column (e.g. column D if A=Name, B=Sales, 
   "confidence": 0.92
 }
 
-EXAMPLE 3 — User: "make a sales tracker template"
+EXAMPLE 3, User: "make a sales tracker template"
 {
   "action_type": "write_values",
   "params": {
@@ -120,7 +120,7 @@ EXAMPLE 3 — User: "make a sales tracker template"
   "confidence": 0.93
 }
 
-When in doubt about a "build / create / make" request, default to write_values with at least 5 rows of realistic seed data plus formulas — empty templates feel hollow.
+When in doubt about a "build / create / make" request, default to write_values with at least 5 rows of realistic seed data plus formulas, empty templates feel hollow.
 """
 
 

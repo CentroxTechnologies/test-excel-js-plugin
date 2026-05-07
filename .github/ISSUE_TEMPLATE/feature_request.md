@@ -12,7 +12,7 @@ assignees: ''
 
 ## Proposed solution
 
-<!-- How you'd build it. If you're not sure, say so — that's a discussion-first issue. -->
+<!-- How you'd build it. If you're not sure, say so, that's a discussion-first issue. -->
 
 ## Alternatives considered
 
@@ -20,7 +20,7 @@ assignees: ''
 
 ## Scope
 
-- [ ] Phase 1 (MVP — should ship in current release)
+- [ ] Phase 1 (MVP, should ship in current release)
 - [ ] Phase 2 (workflows / scheduling)
 - [ ] Phase 3 (recording / desktop automation)
 - [ ] Out of scope / parking lot

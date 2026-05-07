@@ -1,4 +1,4 @@
-# Developer Guide — PowerPair scaffold
+# Developer Guide, PowerPair scaffold
 
 You're picking up a working Office.js add-in scaffold. This doc explains what's here, how to run it, and where to plug in real logic.
 
@@ -6,7 +6,7 @@ You're picking up a working Office.js add-in scaffold. This doc explains what's 
 
 ---
 
-## TL;DR — run it in 3 commands
+## TL;DR, run it in 3 commands
 
 ```bash
 cd addin
@@ -34,7 +34,7 @@ You should see the formula land in the active cell. Done.
 ```
 officejs/
 ├── addin/                             # The add-in (sideloads into Excel)
-│   ├── manifest.xml                   # Office Add-in manifest — points to localhost:3000
+│   ├── manifest.xml                   # Office Add-in manifest, points to localhost:3000
 │   ├── package.json                   # http-server + dev cert tooling
 │   └── src/
 │       ├── taskpane/
@@ -43,7 +43,7 @@ officejs/
 │       │   └── taskpane.css
 │       ├── commands/                  # Ribbon button handler
 │       └── assets/                    # Icons
-├── backend/                           # FastAPI service — OPTIONAL for now
+├── backend/                           # FastAPI service, OPTIONAL for now
 │   ├── main.py                        # Two routes: /api/health and /api/process
 │   ├── ai_engine.py                   # Real LLM provider abstraction
 │   ├── validator.py                   # Validates AI output before it reaches the add-in
@@ -112,16 +112,16 @@ If you open the taskpane URL in a plain browser (no Excel), Office.js never anno
 The system supports six actions today: `insert_formula`, `write_values`, `format_cells`, `create_chart`, `show_insight`, `sort_range`. To add a seventh (e.g. `apply_filter`), touch these four spots:
 
 ### 1. Backend system prompt
-`backend/ai_engine.py` — append the new action to the `Action types and params:` block in `SYSTEM_PROMPT`. Give it a one-line params example. The LLM only knows what's in this prompt.
+`backend/ai_engine.py`, append the new action to the `Action types and params:` block in `SYSTEM_PROMPT`. Give it a one-line params example. The LLM only knows what's in this prompt.
 
 ### 2. Backend validator
-`backend/validator.py` — add `_validate_apply_filter(params)`, register it in the `_VALIDATORS` map. Return `_reject("...")` for anything malformed; return `None` if it's fine.
+`backend/validator.py`, add `_validate_apply_filter(params)`, register it in the `_VALIDATORS` map. Return `_reject("...")` for anything malformed; return `None` if it's fine.
 
 ### 3. Frontend Excel handler
-`addin/src/taskpane/taskpane.js` — add `applyApplyFilter(params)` using `Excel.run`, and add a `case "apply_filter":` in `applyAction()`.
+`addin/src/taskpane/taskpane.js`, add `applyApplyFilter(params)` using `Excel.run`, and add a `case "apply_filter":` in `applyAction()`.
 
 ### 4. Frontend mock handler
-Same file — add `applyMockApplyFilter(params)` and a `case "apply_filter":` in `applyMockAction()` so it works in browser preview too.
+Same file, add `applyMockApplyFilter(params)` and a `case "apply_filter":` in `applyMockAction()` so it works in browser preview too.
 
 ### 5. Local engine (optional)
 If you want the new action to work without the backend, add a branch in `localEngine()` in `taskpane.js`.
@@ -151,7 +151,7 @@ The sidebar will now route every command through the backend → LLM → validat
 3. Add `GEMINI_API_KEY=...` and `GEMINI_MODEL=...` to `.env.example` and `.env`.
 4. Add `google-generativeai` to `requirements.txt`.
 
-The system prompt and user prompt are provider-agnostic — no other changes needed.
+The system prompt and user prompt are provider-agnostic, no other changes needed.
 
 ---
 
@@ -172,13 +172,13 @@ There are no automated tests yet. Manual checks:
 
 This scaffold maps to Phase 1 / Week 1-2 of the spec. Still to build:
 
-1. **Saved workflows** — record sequences of actions, name them, replay on new data, edit. The killer feature vs Copilot.
-2. **Scheduling** — cron + email notifications (Office.js can't run when Excel is closed)
-3. **Multi-LLM routing** — task classifier picks GPT-mini for simple, Claude for complex, Gemini for large data, Azure OpenAI for sensitive
-4. **Real validation pipeline** — current validator does ~30% of the spec. Missing reference checks, type checks, range completeness, test execution, reasonableness
-5. **Audit trail** — DB-persisted log of every action with user, model, prompt, formula, result
-6. **Confidence-driven UX** — auto-apply for high-confidence, sidebar-only for low-confidence
-7. **Edge cases** — merged cells, multiple header rows, hidden rows, pivot tables, mixed types
+1. **Saved workflows**, record sequences of actions, name them, replay on new data, edit. The killer feature vs Copilot.
+2. **Scheduling**, cron + email notifications (Office.js can't run when Excel is closed)
+3. **Multi-LLM routing**, task classifier picks GPT-mini for simple, Claude for complex, Gemini for large data, Azure OpenAI for sensitive
+4. **Real validation pipeline**, current validator does ~30% of the spec. Missing reference checks, type checks, range completeness, test execution, reasonableness
+5. **Audit trail**, DB-persisted log of every action with user, model, prompt, formula, result
+6. **Confidence-driven UX**, auto-apply for high-confidence, sidebar-only for low-confidence
+7. **Edge cases**, merged cells, multiple header rows, hidden rows, pivot tables, mixed types
 
 Full spec: `/home/adeel/centrox/projects-overview/excel-project/CLIENT_REQUIREMENTS.md`.
 Sequenced backlog: `/home/adeel/centrox/projects-overview/excel-project/SUMMARY/03-NEXT-STEPS.md`.
@@ -195,4 +195,4 @@ Sequenced backlog: `/home/adeel/centrox/projects-overview/excel-project/SUMMARY/
 
 **`Excel.run` throws InvalidArgument.** Active cell is on a different sheet than the data. Click a cell inside your data before sending.
 
-**Local engine doesn't recognize a command.** That's expected — it only handles ~7 patterns. To add more, edit `localEngine()` in `taskpane.js`. To get full natural-language support, switch to the real backend (`USE_LOCAL_ENGINE = false`).
+**Local engine doesn't recognize a command.** That's expected, it only handles ~7 patterns. To add more, edit `localEngine()` in `taskpane.js`. To get full natural-language support, switch to the real backend (`USE_LOCAL_ENGINE = false`).

@@ -11,7 +11,7 @@
   <ProviderName>PowerPair</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="PowerPair"/>
-  <Description DefaultValue="PowerPair — simple like ChatGPT, accurate like a formula, safe like an audit trail. Talk to your spreadsheet in plain English; the AI writes formulas, Excel computes them."/>
+  <Description DefaultValue="PowerPair, simple like ChatGPT, accurate like a formula, safe like an audit trail. Talk to your spreadsheet in plain English; the AI writes formulas, Excel computes them."/>
   <IconUrl DefaultValue="https://centroxtechnologies.github.io/test-excel-js-plugin/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://centroxtechnologies.github.io/test-excel-js-plugin/assets/icon-64.png"/>
   <SupportUrl DefaultValue="https://centroxtechnologies.github.io/test-excel-js-plugin"/>
