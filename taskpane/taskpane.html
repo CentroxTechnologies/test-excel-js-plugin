@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Excel AI Assistant</title>
+
+  <!-- Office.js must come from the CDN so the host can inject the Excel context. -->
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+
+  <link rel="stylesheet" href="taskpane.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="logo" aria-hidden="true">AI</div>
+    <div class="title-block">
+      <h1>Excel AI Assistant</h1>
+      <p class="subtitle">Ask in plain English. Preview before it runs.</p>
+    </div>
+  </header>
+
+  <!-- Mode banner: swapped between "Connected to Excel" and "Browser Preview" at runtime. -->
+  <div id="mode-banner" class="mode-banner" hidden></div>
+
+  <!-- Mock spreadsheet — only rendered in browser preview mode. Editable cells. -->
+  <section id="mock-sheet-container" class="mock-sheet-container" hidden>
+    <div class="mock-sheet-header">
+      <span>Mock Spreadsheet</span>
+      <span class="mock-sheet-hint">Click a cell to set active. Edit values inline.</span>
+    </div>
+    <div class="mock-sheet-scroll">
+      <table id="mock-sheet" class="mock-sheet"></table>
+    </div>
+  </section>
+
+  <main id="chat" class="chat" aria-live="polite"></main>
+
+  <footer class="input-bar">
+    <textarea
+      id="input"
+      class="input"
+      rows="1"
+      placeholder="Try: sum column revenue"
+      aria-label="Type a command"
+    ></textarea>
+    <button id="send" class="send" type="button" aria-label="Send">Send</button>
+  </footer>
+
+  <script src="taskpane.js"></script>
+</body>
+</html>
