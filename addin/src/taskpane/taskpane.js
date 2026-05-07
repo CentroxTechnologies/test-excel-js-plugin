@@ -16,6 +16,11 @@
 // Backend base URL. In production this moves to an env-driven config.
 const BACKEND_URL = "http://localhost:8001";
 
+// When true, the sidebar handles requests with a tiny local pattern-matcher and
+// the backend is not contacted. Junior dev: flip this to false once the FastAPI
+// backend is running and configured with an API key. See DEV-GUIDE.md.
+const USE_LOCAL_ENGINE = true;
+
 // Cached DOM refs.
 let chatEl = null;
 let inputEl = null;
@@ -180,7 +185,13 @@ async function readSheetContext() {
 }
 
 // POST the user's command + sheet context to the backend.
+// If USE_LOCAL_ENGINE is true, skip the network and run a local pattern-matcher
+// instead — the plugin works without any backend for sideload demos.
 async function postToBackend(message, context) {
+  if (USE_LOCAL_ENGINE) {
+    return localEngine(message, context);
+  }
+
   const payload = {
     message,
     sheet_data: context.sheet_data,
@@ -199,6 +210,155 @@ async function postToBackend(message, context) {
     throw new Error(`backend returned ${res.status}`);
   }
   return res.json();
+}
+
+// ---------- Local engine (frontend-only fallback) ----------
+//
+// Junior dev: this is a stub. It mimics what the FastAPI backend returns so the
+// plugin runs end-to-end without a server. Each branch shows the response shape
+// the real backend must produce. To replace with real LLM calls, set
+// USE_LOCAL_ENGINE = false at the top of this file and start the FastAPI server.
+
+function localEngine(message, context) {
+  const msg = (message || "").toLowerCase();
+  const headers = context.headers || [];
+  const lastRow = Math.max(context.sheet_data?.length || 0, 1);
+
+  if (/\b(highest|largest|max|maximum)\b/.test(msg)) {
+    return localMaxMin(msg, headers, context.sheet_data, true);
+  }
+  if (/\b(lowest|smallest|min|minimum)\b/.test(msg)) {
+    return localMaxMin(msg, headers, context.sheet_data, false);
+  }
+  if (/\b(how many|count)\b/.test(msg)) {
+    return localFormula("COUNTA", msg, headers, lastRow, context.active_cell);
+  }
+  if (/\b(average|mean|avg)\b/.test(msg)) {
+    return localFormula("AVERAGE", msg, headers, lastRow, context.active_cell);
+  }
+  if (/\bsum\b/.test(msg)) {
+    return localFormula("SUM", msg, headers, lastRow, context.active_cell);
+  }
+  if (/\b(chart|graph|plot)\b/.test(msg)) {
+    return localChart(headers, lastRow);
+  }
+  if (/\bsort\b/.test(msg)) {
+    return localSort(msg, headers, lastRow);
+  }
+  if (/\b(bold|format|highlight|header)\b/.test(msg)) {
+    return localFormat(headers);
+  }
+
+  return localInsight(
+    "Local engine doesn't understand that yet. Try: 'sum column sales', " +
+      "'average column B', 'sort by name', 'format headers', 'highest in sales', or 'create a chart'."
+  );
+}
+
+function localFormula(func, msg, headers, lastRow, activeCell) {
+  const colIndex = guessColumn(msg, headers);
+  if (colIndex === null) {
+    return localInsight(
+      `Tell me which column to ${func.toLowerCase()}. Example: '${func.toLowerCase()} column sales'.`
+    );
+  }
+  const letter = columnLetter(colIndex);
+  const formula = `=${func}(${letter}2:${letter}${lastRow})`;
+  const headerLabel = headers[colIndex] != null ? String(headers[colIndex]) : letter;
+  return {
+    action_type: "insert_formula",
+    params: { cell: activeCell || "A1", formula },
+    preview_text: `Insert ${formula} into ${activeCell || "A1"} to ${func.toLowerCase()} column '${headerLabel}'.`,
+    confidence: 0.9,
+  };
+}
+
+function localMaxMin(msg, headers, sheetData, wantMax) {
+  const colIndex = guessColumn(msg, headers);
+  if (colIndex === null) {
+    return localInsight("Tell me which column you mean. Example: 'highest in sales'.");
+  }
+  const numericRows = [];
+  (sheetData || []).slice(1).forEach((row, i) => {
+    const v = Number(row[colIndex]);
+    if (Number.isFinite(v)) numericRows.push({ row: i + 2, value: v });
+  });
+  if (numericRows.length === 0) {
+    return localInsight("Couldn't find numeric values in that column.");
+  }
+  const chosen = numericRows.reduce((best, cur) =>
+    wantMax ? (cur.value > best.value ? cur : best) : cur.value < best.value ? cur : best
+  );
+  const word = wantMax ? "highest" : "lowest";
+  const label = headers[colIndex] != null ? String(headers[colIndex]) : columnLetter(colIndex);
+  return localInsight(`The ${word} value in '${label}' is ${chosen.value} in row ${chosen.row}.`);
+}
+
+function localChart(headers, lastRow) {
+  if (!headers.length) {
+    return localInsight("Add some data to the sheet before creating a chart.");
+  }
+  const dataRange = `A1:${columnLetter(headers.length - 1)}${lastRow}`;
+  return {
+    action_type: "create_chart",
+    params: { data_range: dataRange, chart_type: "ColumnClustered", title: "Chart" },
+    preview_text: `Create a column chart from ${dataRange}.`,
+    confidence: 0.8,
+  };
+}
+
+function localSort(msg, headers, lastRow) {
+  if (!headers.length) {
+    return localInsight("Nothing to sort yet.");
+  }
+  const colIndex = guessColumn(msg, headers) ?? 0;
+  const ascending = /ascending|asc\b/.test(msg);
+  const range = `A1:${columnLetter(headers.length - 1)}${lastRow}`;
+  const label = headers[colIndex] != null ? String(headers[colIndex]) : columnLetter(colIndex);
+  return {
+    action_type: "sort_range",
+    params: { range, sort_column: colIndex, ascending },
+    preview_text: `Sort ${range} by '${label}' (${ascending ? "ascending" : "descending"}).`,
+    confidence: 0.85,
+  };
+}
+
+function localFormat(headers) {
+  const end = columnLetter(Math.max(headers.length - 1, 0));
+  const range = `A1:${end}1`;
+  return {
+    action_type: "format_cells",
+    params: { range, bold: true, background: "#4472C4", font_color: "#FFFFFF" },
+    preview_text: `Make ${range} bold, blue background, white text.`,
+    confidence: 0.85,
+  };
+}
+
+function localInsight(text) {
+  return {
+    action_type: "show_insight",
+    params: { text },
+    preview_text: text,
+    confidence: 0.5,
+  };
+}
+
+function guessColumn(msg, headers) {
+  const letterMatch = msg.match(/column\s+([a-z])\b/i);
+  if (letterMatch) return letterMatch[1].toUpperCase().charCodeAt(0) - 65;
+  for (const token of msg.match(/[a-z_]+/gi) || []) {
+    const idx = headers.findIndex(
+      (h) => h != null && String(h).toLowerCase().trim() === token.toLowerCase().trim()
+    );
+    if (idx >= 0) return idx;
+  }
+  for (const token of msg.match(/[a-z_]+/gi) || []) {
+    const idx = headers.findIndex(
+      (h) => h != null && String(h).toLowerCase().includes(token.toLowerCase())
+    );
+    if (idx >= 0) return idx;
+  }
+  return null;
 }
 
 // Decide how to render a backend response.
