@@ -1,5 +1,12 @@
 # PowerPair
 
+[![CI](https://github.com/CentroxTechnologies/test-excel-js-plugin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CentroxTechnologies/test-excel-js-plugin/actions/workflows/ci.yml)
+[![License: Proprietary](https://img.shields.io/badge/license-Proprietary-red.svg)](./LICENSE)
+[![Office Add-in](https://img.shields.io/badge/Office.js-Add--in-217346?logo=microsoftexcel&logoColor=white)](https://learn.microsoft.com/office/dev/add-ins/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Status](https://img.shields.io/badge/status-POC-orange.svg)](#whats-next-tayyab--start-here)
+
 > Simple like ChatGPT, accurate like a formula, safe like an audit trail.
 
 PowerPair is an Office.js Excel add-in. Type plain English in the sidebar — the AI returns a structured action (a formula, a chart, a sort, a bulk write) which Excel previews and then applies. The AI never computes numbers itself; it generates Excel formulas and lets Excel compute. Workflows, scheduling, and a recording feature are on the roadmap (see "What's next" below).

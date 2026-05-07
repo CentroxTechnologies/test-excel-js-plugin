@@ -1,0 +1,19 @@
+# PowerPair code owners
+# At least one of these reviewers is required on every PR.
+
+# Default — everything in the repo
+*                       @adeelcentrox @tayyabCentrox
+
+# Backend (FastAPI + AI engine + validator)
+/backend/                @adeelcentrox
+
+# Add-in (Office.js + UI)
+/addin/                  @tayyabCentrox @adeelcentrox
+
+# CI / repo plumbing
+/.github/                @adeelcentrox
+
+# Docs
+/README.md               @adeelcentrox
+/DEV-GUIDE.md            @adeelcentrox
+/CONTRIBUTING.md         @adeelcentrox
