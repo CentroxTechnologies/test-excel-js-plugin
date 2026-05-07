@@ -1,114 +1,126 @@
-# Excel AI Assistant — Foundation
+# PowerPair
 
-An Office.js Excel add-in paired with a Python FastAPI backend. The user types a plain-English command in the sidebar ("sum column revenue"), the backend decides what to do, and the add-in executes it in Excel.
+> Simple like ChatGPT, accurate like a formula, safe like an audit trail.
 
-This repo is the **foundation skeleton**. It ships with:
+PowerPair is an Office.js Excel add-in. Type plain English in the sidebar — the AI returns a structured action (a formula, a chart, a sort, a bulk write) which Excel previews and then applies. The AI never computes numbers itself; it generates Excel formulas and lets Excel compute. Workflows, scheduling, and a recording feature are on the roadmap (see "What's next" below).
 
-- A FastAPI backend that pattern-matches commands to actions (placeholder for a real LLM).
-- An Office.js sidebar with a chat UI, preview cards, and Apply / Cancel flow.
-- The end-to-end wiring: sheet context → backend → validated action → Excel.
-
-Three things are **not yet built** but have clear placeholders:
-
-- OpenAI / Claude integration (`backend/ai_engine.py` has the planned prompt structure in comments).
-- Saved workflows / macros.
-- Scheduled runs.
+This repo is the working scaffold for the Phase-1 MVP.
 
 ---
 
-## The golden rule
+## Install in Excel Online (anyone with a Microsoft account)
 
-**The AI does not compute values.** It emits Excel formulas (`=SUM(B2:B100)`) and lets Excel compute them. The only exception is `show_insight` answers ("highest value is 95000 in row 7"), where the backend reads `sheet_data` directly because there's no formula that returns a text answer into a chat.
+The add-in is hosted on GitHub Pages. To use it:
 
-Keep this rule in mind when extending the engine.
+1. Save the manifest from this URL (right-click → Save link as `manifest.xml`):
+   <https://raw.githubusercontent.com/CentroxTechnologies/test-excel-js-plugin/main/addin/manifest.xml>
+2. Go to <https://office.com>, sign in, open Excel for the web, create a blank workbook.
+3. Use the search bar at the top (`Alt + Q`) → type "add-in" → click **Get Add-ins**.
+4. In the dialog, click **More Add-ins** → **Upload My Add-in** → pick the `manifest.xml` you saved.
+5. **Home** tab → click **Open PowerPair**. The sidebar opens on the right.
 
----
-
-## Prerequisites
-
-- **Node.js 18+** (`node --version`)
-- **Python 3.10+** (`python3 --version`)
-- **pip** (comes with Python)
-- **A Microsoft 365 account** — free dev tenant works fine. See next section.
-
-### Getting a Microsoft 365 developer account
-
-1. Go to <https://developer.microsoft.com/en-us/microsoft-365/dev-program>.
-2. Click **Join now** and sign in with any Microsoft account (or create one).
-3. Pick **Instant sandbox** — takes about 60 seconds and gives you an `@your-tenant.onmicrosoft.com` account with Excel Online.
-4. Save the admin email + password somewhere safe. You'll use this account to sideload the add-in.
+If the upload option is missing, your Microsoft account is a personal tier — Microsoft removed sideload from personal accounts on Excel for Web. Workaround: get a free Microsoft 365 Developer Program tenant at <https://developer.microsoft.com/microsoft-365/dev-program> and sign in with the sandbox admin account.
 
 ---
 
-## Setup (first run)
+## Try the demo (60 seconds)
 
-Easiest path: run `./start.sh` from the repo root. It does venv + npm install + cert generation + launches both servers.
+Add some sample data first — `Name`, `Sales`, `Region`, `Quarter` columns work great. Or click any **suggestion chip** above the input to skip the setup.
 
-If you prefer doing it manually:
+Demo commands worth running first:
 
-### 1. Backend
+| Command | What you'll see |
+|---|---|
+| `Build me a quarterly budget template starting at A1` | 11 rows × 6 cols of categories + formulas appear on screen |
+| `Make a sales tracker template` | 6 rows of seed data with line totals + grand total |
+| `Add a "Q4 vs Q1 growth %" column` | New column with growth-percentage formulas |
+| `Highlight the Net profit row in green` | Single row repaints |
+| `Make a column chart of all four quarters` | Real Excel chart pops in |
+| `Sort by Total descending` | Rows reorder live |
+| Click the **💾 Save as Workflow** button | Roadmap message: workflows + scheduling are Phase 2 |
+
+Each AI action shows a preview card — review it, click **Apply**, watch the sheet update.
+
+---
+
+## How it works (the 30-second tour)
+
+```
+You type a command in the sidebar
+        │
+        ▼
+taskpane.js reads sheet context (headers, data, active cell)
+        │
+        ▼
+POST /api/process to FastAPI backend (or local pattern-matcher if USE_LOCAL_ENGINE=true)
+        │
+        ▼
+ai_engine.py builds a prompt, calls GPT-4o (or Claude), parses JSON response
+        │
+        ▼
+validator.py checks the action is structurally sane
+        │
+        ▼
+Sidebar renders a preview card with Apply / Cancel
+        │
+        ▼  on Apply
+Office.js writes the formula / values / format / chart back to Excel
+```
+
+Six action types the AI can emit: `insert_formula`, `write_values`, `format_cells`, `create_chart`, `sort_range`, `show_insight`. Adding a seventh is a 4-step recipe documented in [DEV-GUIDE.md](./DEV-GUIDE.md).
+
+---
+
+## Run the backend locally (for real LLM responses)
+
+The plugin works **without a backend** — it has a frontend pattern-matcher (the "local engine") that handles ~7 canned commands (sum, average, count, max, min, sort, format, chart). For natural-language commands like "build me a quarterly budget" you need the real backend.
+
+### One-time setup
 
 ```bash
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env
+```
+
+Open `backend/.env` and paste your OpenAI key in place of `your-openai-key-here`. Set `AI_PROVIDER=anthropic` if you'd rather use Claude.
+
+### Run
+
+```bash
 uvicorn main:app --reload --port 8001
 ```
 
-Verify: `curl http://localhost:8001/api/health` → `{"status":"ok"}`
+`{"status":"ok"}` from `curl http://localhost:8001/api/health` confirms it's up.
 
-### 2. Frontend
+### Switch the plugin to use the backend
 
-```bash
-cd addin
-npm install
-npm run cert         # installs localhost HTTPS certs (one time)
-npm start            # serves src/ on https://localhost:3000
-```
+Two paths depending on whether you want the deployed plugin or your local copy to talk to the backend:
 
-Visit `https://localhost:3000/taskpane/taskpane.html` once in your browser and accept the cert warning — Excel Online won't load the add-in otherwise.
+**Option A — local dev loop (fastest):**
+1. `cd addin && npm install && npm run cert && npm start` — serves the add-in over HTTPS on `localhost:3000`
+2. Edit `addin/manifest.xml`, swap the `https://centroxtechnologies.github.io/test-excel-js-plugin` URLs back to `https://localhost:3000` (or use a separate local-dev manifest)
+3. Sideload that manifest in Excel
+4. In `addin/src/taskpane/taskpane.js`, set `USE_LOCAL_ENGINE = false`
+5. Refresh the sidebar — every command now hits your backend
 
----
-
-## Sideloading the add-in into Excel Online
-
-1. Sign into <https://www.office.com> with your Microsoft 365 account.
-2. Open Excel Online (**Excel** from the app launcher) and create a new blank workbook.
-3. Put some sample data in so you have something to play with. Example:
-
-   | Name    | Revenue |
-   |---------|---------|
-   | Alpha   | 12000   |
-   | Beta    | 8500    |
-   | Gamma   | 23000   |
-   | Delta   | 4200    |
-
-4. On the ribbon, click the **Insert** tab → **Office Add-ins** → **Upload My Add-in**.
-5. Browse to `addin/manifest.xml` in this repo and upload it.
-6. Excel will add an **AI Assistant** group on the **Home** tab with an **Open Assistant** button. Click it. The sidebar opens.
+**Option B — keep using the deployed plugin:**
+1. Set `USE_LOCAL_ENGINE = false` in `addin/src/taskpane/taskpane.js`
+2. Push the change to the `gh-pages` branch (the live site updates in ~30 sec)
+3. Backend must be reachable from the deployed plugin. Localhost works from HTTPS pages on most browsers (special exception); if it breaks, run `ngrok http 8001` and put the ngrok URL in `BACKEND_URL` at the top of `taskpane.js`
 
 ---
 
-## Testing walkthrough
+## Local engine vs real backend
 
-With the sample data above and the sidebar open:
+| Mode | Where it runs | Good for | Limits |
+|---|---|---|---|
+| `USE_LOCAL_ENGINE = true` | Browser only | Quick demos, offline testing, no API costs | Only 7 hardcoded patterns; doesn't understand "build me a budget" |
+| `USE_LOCAL_ENGINE = false` | FastAPI backend → OpenAI/Anthropic | Full natural-language commands, bulk write_values, chained reasoning | Needs backend running + API key + key has credits |
 
-1. Click cell **C1** (so the AI knows where to put the result).
-2. In the sidebar, type `sum column revenue` and press Enter.
-3. You'll see a preview card: *"Insert =SUM(B2:B5) into C1 to sum column 'Revenue'."*
-4. Click **Apply**. Cell C1 now contains the formula; it displays 47700.
-
-Try a few more:
-
-- `average column revenue` → AVERAGE formula
-- `highest value in revenue` → chat-only insight ("23000 in row 4")
-- `sort by revenue` → sorts the used range descending
-- `format headers` → bolds row 1 with a blue background
-- `create a chart` → column chart from the used range
-- `how many rows` → COUNTA formula
-
-If you type something the mock engine doesn't recognize, it replies with a help message listing what it can do.
+Flag lives at the top of `addin/src/taskpane/taskpane.js`.
 
 ---
 
@@ -116,65 +128,58 @@ If you type something the mock engine doesn't recognize, it replies with a help 
 
 ```
 officejs/
-├── backend/
-│   ├── main.py           # FastAPI app + CORS + routes
-│   ├── ai_engine.py      # Mock pattern-matcher + LLM placeholder comments
-│   ├── validator.py      # Structural validation before shipping actions to the add-in
-│   ├── models.py         # Pydantic request/response classes
-│   └── requirements.txt
-├── addin/
-│   ├── manifest.xml      # Office Add-in manifest (points to localhost:3000)
-│   ├── package.json      # Dev deps: http-server, office-addin-dev-certs
+├── README.md                          # ← you are here
+├── DEV-GUIDE.md                       # how to extend the codebase
+├── start.sh                           # boots backend + addin server in one command
+├── addin/                             # the Office.js add-in
+│   ├── manifest.xml                   # Office Add-in manifest, points to GitHub Pages URL
+│   ├── package.json                   # http-server + dev cert tooling
 │   └── src/
-│       ├── taskpane/     # Sidebar HTML/CSS/JS
-│       ├── commands/     # Ribbon command handler
-│       └── assets/       # Icon PNGs (served at /assets/...)
-├── start.sh              # One-command dev bootstrap
-└── README.md
+│       ├── taskpane/
+│       │   ├── taskpane.html          # sidebar shell
+│       │   ├── taskpane.js            # UI + Office.js + local engine
+│       │   └── taskpane.css
+│       ├── commands/                  # ribbon command handler
+│       └── assets/                    # icon PNGs
+└── backend/                           # FastAPI service
+    ├── main.py                        # /api/health + /api/process
+    ├── ai_engine.py                   # Provider abstraction (OpenAI, Anthropic), system prompt
+    ├── validator.py                   # validates AI output before sheet write
+    ├── models.py                      # Pydantic request/response models
+    ├── requirements.txt
+    └── .env.example                   # copy to .env and add your API key
 ```
+
+---
+
+## What's next (Tayyab — start here)
+
+This scaffold is Phase-1 / Week-1-2 of the spec. Still to build, in priority order:
+
+1. **Saved workflows** — record a sequence of commands as a named macro, replay on new data, edit later. The killer feature vs Microsoft Copilot.
+2. **Scheduling** — cron triggers + email notification flow (Office.js can't run when Excel is closed)
+3. **Real validation pipeline** — current `validator.py` does ~30% of the spec. Missing reference checks, type checks, range completeness, test execution, reasonableness checks.
+4. **Multi-LLM routing** — task classifier picks GPT-mini for simple, Claude for complex, Gemini for large data, Azure OpenAI for sensitive
+5. **Audit trail** — DB-persisted log of every action for finance/compliance buyers
+6. **Confidence-driven UX** — auto-apply for high-confidence, sidebar-only for low-confidence
+7. **Edge cases** — merged cells, multiple header rows, hidden rows, pivot tables, mixed-type columns
+
+How to add a new action type, switch providers, etc.: see [DEV-GUIDE.md](./DEV-GUIDE.md).
 
 ---
 
 ## Troubleshooting
 
-### The sidebar shows a blank page or "can't reach server"
+**Sidebar shows blank page or "can't reach server".** First time only: open `https://centroxtechnologies.github.io/test-excel-js-plugin/taskpane/taskpane.html` in a browser to confirm the page loads. If it doesn't, GitHub Pages may still be deploying — wait 30 sec and retry.
 
-- Did you visit `https://localhost:3000/taskpane/taskpane.html` in your browser and accept the cert? Excel Online won't load self-signed content until the browser trusts it.
-- Is `npm start` actually running? `curl -k https://localhost:3000/taskpane/taskpane.html` should return HTML.
+**Sidebar shows "Couldn't process that".** Backend isn't reachable. Either flip `USE_LOCAL_ENGINE = true` in `taskpane.js` (and redeploy gh-pages) or start the backend with `uvicorn main:app --port 8001`.
 
-### CORS errors in the browser console
+**API key not configured.** Open `backend/.env`, replace `your-openai-key-here` with a real key from <https://platform.openai.com/api-keys>, then restart the backend.
 
-- The backend allows `*` by default. If you changed it, put your add-in origin back on the allowlist.
-- If you're running the backend somewhere other than `localhost:8001`, update `BACKEND_URL` at the top of `addin/src/taskpane/taskpane.js`.
+**Manifest validation fails when uploading.** `cd addin && npm run validate` to see specifics. The `<Id>` GUID in `manifest.xml` must be unique per add-in — if you fork and deploy a separate copy, run `uuidgen` and replace it.
 
-### Certificate errors
+**CORS errors in the browser console.** The backend allows `*` by default; if you've changed it, add the GitHub Pages origin (`https://centroxtechnologies.github.io`) back to `allow_origins` in `backend/main.py`.
 
-- Re-run `npm run cert` from the `addin/` folder. The certs land in `~/.office-addin-dev-certs/`.
-- On some Linux distros you may also need to trust the root CA manually:
-  `sudo cp ~/.office-addin-dev-certs/ca.crt /usr/local/share/ca-certificates/office-addin-dev.crt && sudo update-ca-certificates`
+**Local engine doesn't recognize a command.** Expected — it only handles ~7 patterns. To get full natural-language support, switch to the real backend (`USE_LOCAL_ENGINE = false`) per the steps above.
 
-### Manifest validation fails when uploading
-
-- Run `cd addin && npm run validate` to see specific errors.
-- The GUID in `<Id>` must be unique per add-in. If you fork and deploy another copy, generate a new one with `uuidgen`.
-
-### Office.js "Office is not defined" errors
-
-- The taskpane must be loaded through HTTPS, not `file://` or plain `http`. Always go through `https://localhost:3000/...`.
-- Check the Network tab — `office.js` should load from `appsforoffice.microsoft.com` with a 200 response.
-
-### Actions fail with "InvalidArgument" or "ItemNotFound"
-
-- The active cell might be on a different sheet than the used range, or the range references a cell that doesn't exist yet. Select a cell inside or near your data before sending commands.
-
----
-
-## What to build next
-
-When you're ready to move past the skeleton:
-
-1. **Real LLM call** — replace the body of `generate_action()` in `ai_engine.py` with the provider call described in the big comment block.
-2. **Saved workflows** — store `{name, command_sequence, bindings}` records; add a `/workflows` route group.
-3. **Scheduled runs** — a lightweight cron or APScheduler setup that replays a saved workflow against a specified workbook on a fixed cadence.
-
-Each feature is its own phase. Don't bolt them onto this foundation in one go — keep phases isolated so the skeleton stays junior-readable.
+**Personal Microsoft account can't see "Upload My Add-in".** Microsoft removed sideload for personal accounts on Excel for Web. Use a Microsoft 365 Developer Program sandbox tenant (free), or use Excel Desktop instead.
