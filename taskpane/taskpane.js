@@ -2,16 +2,18 @@
  * Taskpane logic for the PowerPair sidebar.
  *
  * Two modes:
- *   1. Excel mode — running inside the Excel host. Uses real Office.js.
- *   2. Mock mode — running in a plain browser. Uses an editable mock
+ *   1. Excel mode, running inside the Excel host. Uses real Office.js.
+ *   2. Mock mode, running in a plain browser. Uses an editable mock
  *      spreadsheet rendered in the page for demos and local testing.
  *
  * Detection: Office.onReady is raced against a 2-second timeout. If Excel
  * never announces itself, we fall back to mock mode.
  *
- * The send/preview/apply flow is identical in both modes — only the
+ * The send/preview/apply flow is identical in both modes, only the
  * sheet-reading and action-application layers differ.
  */
+
+import { computeChartPlacement } from "./chart-placement.js";
 
 // Backend base URL. In production this moves to an env-driven config.
 const BACKEND_URL = "http://localhost:8001";
@@ -41,7 +43,7 @@ const MOCK_SEED = [
   ["Bilal", 6800, "East", "Q3"],
 ];
 
-// Mock sheet state — the currently "selected" cell and the rendered <table> ref.
+// Mock sheet state, the currently "selected" cell and the rendered <table> ref.
 let mockActiveCell = "A1";
 let mockSheetEl = null;
 
@@ -61,7 +63,10 @@ async function boot() {
   sendBtn.addEventListener("click", onSendClicked);
   inputEl.addEventListener("keydown", onKeyDown);
 
-  wireComingSoonButtons();
+  wireTabs();
+  wireRecording();
+  wireSaveModal();
+  wireScheduleStub();
   renderSuggestionChips();
 
   const info = await detectHost(2000);
@@ -98,7 +103,7 @@ function detectHost(timeoutMs) {
           if (info && info.host) finish(info);
         });
       } catch (_err) {
-        // Office.js failed to initialize — fall through to the timeout.
+        // Office.js failed to initialize, fall through to the timeout.
       }
     }
   });
@@ -113,30 +118,276 @@ function setBanner(isExcel) {
     banner.className = "mode-banner banner-excel";
   } else {
     banner.textContent =
-      "Browser Preview Mode — connect to Excel for full functionality";
+      "Browser Preview Mode, connect to Excel for full functionality";
     banner.className = "mode-banner banner-mock";
   }
 }
 
-// ---------- Coming-soon buttons + suggestion chips (demo polish) ----------
+// ---------- Tab navigation ----------
 
-const COMING_SOON_COPY = {
-  workflow:
-    "🚧 Save as Workflow — coming in Phase 2. The team will record any sequence of commands as a named macro and replay it on new data with one click. Backend stub planned in workflows.py.",
-  schedule:
-    "🚧 Schedule — coming in Phase 2. Pick a saved workflow, set daily / weekly / monthly cadence; backend cron triggers it and notifies you when Excel reopens.",
-  record:
-    "🚧 Record Macro — coming in Phase 3. Capture clicks across desktop apps (Oracle ERP, FileZilla, the browser) and turn them into editable workflows via OCR + AI.",
-};
+function wireTabs() {
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", () => switchView(tab.dataset.view));
+  });
+}
 
-function wireComingSoonButtons() {
+function switchView(viewName) {
+  document.querySelectorAll(".tab").forEach((t) => {
+    const active = t.dataset.view === viewName;
+    t.classList.toggle("tab-active", active);
+    t.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  document.querySelectorAll(".view").forEach((v) => {
+    const active = v.id === `view-${viewName}`;
+    v.classList.toggle("view-active", active);
+    v.hidden = !active;
+  });
+  if (viewName === "workflows") {
+    refreshWorkflowsList();
+  }
+}
+
+// ---------- Recording state ----------
+
+let recording = false;
+let recordedSteps = [];
+
+function wireRecording() {
+  const recordBtn = document.getElementById("record-btn");
+  const stopBtn = document.getElementById("stop-recording");
+  recordBtn.addEventListener("click", () => {
+    if (recording) {
+      // Hitting "Record" while already recording is treated as Stop & Save.
+      openSaveModal();
+    } else {
+      startRecording();
+    }
+  });
+  stopBtn.addEventListener("click", openSaveModal);
+}
+
+function startRecording() {
+  recording = true;
+  recordedSteps = [];
+  document.getElementById("record-btn").setAttribute("aria-pressed", "true");
+  document.getElementById("recording-banner").hidden = false;
+  updateRecCounter();
+  renderSystemMessage("Recording started. Every action you Apply becomes a workflow step.");
+}
+
+function stopRecordingDiscard() {
+  recording = false;
+  recordedSteps = [];
+  document.getElementById("record-btn").setAttribute("aria-pressed", "false");
+  document.getElementById("recording-banner").hidden = true;
+  updateRecCounter();
+}
+
+function recordAppliedAction(message, response) {
+  if (!recording) return;
+  if (response.action_type === "show_insight") return; // skip chat-only answers
+  recordedSteps.push({
+    message: message || "",
+    action_type: response.action_type,
+    params: response.params || {},
+  });
+  updateRecCounter();
+}
+
+function updateRecCounter() {
+  const counter = document.getElementById("rec-counter");
+  if (counter) counter.textContent = `${recordedSteps.length} step${recordedSteps.length === 1 ? "" : "s"}`;
+}
+
+// ---------- Save workflow modal ----------
+
+function wireSaveModal() {
+  document.getElementById("save-cancel").addEventListener("click", closeSaveModal);
+  document.getElementById("save-confirm").addEventListener("click", submitSaveModal);
+  document.getElementById("save-modal").addEventListener("click", (e) => {
+    if (e.target.id === "save-modal") closeSaveModal();
+  });
+}
+
+function openSaveModal() {
+  if (recordedSteps.length === 0) {
+    renderSystemMessage("No steps recorded yet. Run a few commands and click Apply, then try again.");
+    stopRecordingDiscard();
+    return;
+  }
+  document.getElementById("save-modal-stepcount").textContent =
+    `${recordedSteps.length} step${recordedSteps.length === 1 ? "" : "s"} captured`;
+  document.getElementById("save-name").value = "";
+  document.getElementById("save-desc").value = "";
+  document.getElementById("save-modal").hidden = false;
+  document.getElementById("save-name").focus();
+}
+
+function closeSaveModal() {
+  document.getElementById("save-modal").hidden = true;
+}
+
+async function submitSaveModal() {
+  const name = document.getElementById("save-name").value.trim();
+  const description = document.getElementById("save-desc").value.trim();
+  if (!name) {
+    document.getElementById("save-name").focus();
+    return;
+  }
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/workflows`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, description, steps: recordedSteps }),
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      throw new Error(`backend ${res.status}: ${detail}`);
+    }
+    const wf = await res.json();
+    closeSaveModal();
+    stopRecordingDiscard();
+    renderSystemMessage(`Workflow saved: "${wf.name}" (${wf.steps.length} steps).`);
+  } catch (err) {
+    renderErrorMessage(`Couldn't save workflow: ${err.message || err}`);
+  }
+}
+
+function wireScheduleStub() {
   document.querySelectorAll(".coming-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const feature = btn.dataset.feature;
-      const text = COMING_SOON_COPY[feature] || "🚧 Coming soon.";
-      renderAiMessage(text);
+      renderAiMessage(
+        "Schedule: not yet implemented. Will let you pick a saved workflow and set a daily / weekly / monthly cadence with email notifications."
+      );
     });
   });
+}
+
+// ---------- Workflows view ----------
+
+async function refreshWorkflowsList() {
+  const list = document.getElementById("workflows-list");
+  const empty = document.getElementById("workflows-empty");
+  list.innerHTML = "";
+  empty.hidden = true;
+
+  let workflows;
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/workflows`);
+    if (!res.ok) throw new Error(`backend ${res.status}`);
+    workflows = await res.json();
+  } catch (err) {
+    list.innerHTML = "";
+    empty.hidden = false;
+    empty.innerHTML = `Couldn't reach backend: <code>${err.message || err}</code>. Start it with <code>uvicorn main:app --port 8001</code> in <code>backend/</code>.`;
+    return;
+  }
+
+  if (!workflows.length) {
+    empty.hidden = false;
+    return;
+  }
+
+  for (const wf of workflows) {
+    list.appendChild(renderWorkflowCard(wf));
+  }
+}
+
+function renderWorkflowCard(wf) {
+  const card = document.createElement("div");
+  card.className = "workflow-card";
+
+  const name = document.createElement("div");
+  name.className = "wf-name";
+  name.textContent = wf.name;
+  card.appendChild(name);
+
+  if (wf.description) {
+    const desc = document.createElement("div");
+    desc.className = "wf-desc";
+    desc.textContent = wf.description;
+    card.appendChild(desc);
+  }
+
+  const meta = document.createElement("div");
+  meta.className = "wf-meta";
+  const created = new Date(wf.created_at).toLocaleDateString();
+  meta.textContent = `${wf.steps.length} step${wf.steps.length === 1 ? "" : "s"} · saved ${created}`;
+  card.appendChild(meta);
+
+  const stepsBox = document.createElement("div");
+  stepsBox.className = "workflow-steps";
+  const ol = document.createElement("ol");
+  for (const step of wf.steps) {
+    const li = document.createElement("li");
+    li.textContent = step.message || step.action_type;
+    ol.appendChild(li);
+  }
+  stepsBox.appendChild(ol);
+  card.appendChild(stepsBox);
+
+  const actions = document.createElement("div");
+  actions.className = "wf-actions";
+
+  const runBtn = document.createElement("button");
+  runBtn.type = "button";
+  runBtn.className = "wf-run";
+  runBtn.textContent = "Run";
+  runBtn.addEventListener("click", () => runWorkflow(wf));
+  actions.appendChild(runBtn);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.className = "wf-delete";
+  deleteBtn.textContent = "Delete";
+  deleteBtn.addEventListener("click", () => deleteWorkflow(wf));
+  actions.appendChild(deleteBtn);
+
+  card.appendChild(actions);
+  return card;
+}
+
+async function runWorkflow(wf) {
+  switchView("chat");
+  renderSystemMessage(`Running workflow "${wf.name}" (${wf.steps.length} steps)...`);
+  let results;
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/workflows/${wf.id}/run`, { method: "POST" });
+    if (!res.ok) throw new Error(`backend ${res.status}`);
+    results = await res.json();
+  } catch (err) {
+    renderErrorMessage(`Couldn't run workflow: ${err.message || err}`);
+    return;
+  }
+  let success = 0;
+  for (let i = 0; i < results.length; i++) {
+    const step = results[i];
+    renderSystemMessage(`Step ${i + 1}/${results.length}: ${step.preview_text || step.action_type}`);
+    try {
+      await applyAction(step);
+      success += 1;
+    } catch (err) {
+      renderErrorMessage(`Step ${i + 1} failed: ${err.message || err}`);
+    }
+    // Small pause so the eye can follow
+    await sleep(300);
+  }
+  renderAiMessage(`Workflow "${wf.name}" complete. ${success}/${results.length} steps applied.`);
+}
+
+async function deleteWorkflow(wf) {
+  if (!confirm(`Delete workflow "${wf.name}"?`)) return;
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/workflows/${wf.id}`, { method: "DELETE" });
+    if (!res.ok && res.status !== 204) throw new Error(`backend ${res.status}`);
+    refreshWorkflowsList();
+  } catch (err) {
+    renderErrorMessage(`Couldn't delete: ${err.message || err}`);
+  }
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 const SUGGESTION_CHIPS = [
@@ -188,6 +439,7 @@ async function onSendClicked() {
   try {
     const context = await readSheetContext();
     const response = await postToBackend(text, context);
+    response._userMessage = text;
     thinkingEl.remove();
     handleBackendResponse(response);
   } catch (err) {
@@ -200,7 +452,7 @@ async function onSendClicked() {
 }
 
 // Read everything the backend needs to understand the sheet right now.
-// Branches on mode — mock reads from the DOM table, Excel reads via Office.js.
+// Branches on mode, mock reads from the DOM table, Excel reads via Office.js.
 async function readSheetContext() {
   if (mockMode) return readMockSheetContext();
   return Excel.run(async (ctx) => {
@@ -222,7 +474,7 @@ async function readSheetContext() {
       headers = sheetData.length > 0 ? sheetData[0] : [];
     }
 
-    // activeCell.address looks like "Sheet1!B5" — strip the sheet prefix.
+    // activeCell.address looks like "Sheet1!B5", strip the sheet prefix.
     const rawAddress = activeCell.address || "A1";
     const bareCell = rawAddress.includes("!") ? rawAddress.split("!")[1] : rawAddress;
 
@@ -237,7 +489,7 @@ async function readSheetContext() {
 
 // POST the user's command + sheet context to the backend.
 // If USE_LOCAL_ENGINE is true, skip the network and run a local pattern-matcher
-// instead — the plugin works without any backend for sideload demos.
+// instead, the plugin works without any backend for sideload demos.
 async function postToBackend(message, context) {
   if (USE_LOCAL_ENGINE) {
     return localEngine(message, context);
@@ -319,9 +571,19 @@ function localFormula(func, msg, headers, lastRow, activeCell) {
   return {
     action_type: "insert_formula",
     params: { cell: activeCell || "A1", formula },
-    preview_text: `Insert ${formula} into ${activeCell || "A1"} to ${func.toLowerCase()} column '${headerLabel}'.`,
+    preview_text: friendlyFormulaPreview(func, headerLabel, activeCell || "A1", lastRow - 1),
     confidence: 0.9,
   };
+}
+
+function friendlyFormulaPreview(func, columnLabel, targetCell, rowCount) {
+  const verbMap = {
+    SUM: `Total up the ${columnLabel} column (${rowCount} rows)`,
+    AVERAGE: `Average the ${columnLabel} column (${rowCount} rows)`,
+    COUNTA: `Count how many rows have a value in ${columnLabel}`,
+  };
+  const lead = verbMap[func] || `Run ${func} on ${columnLabel}`;
+  return `${lead} and drop the answer into ${targetCell}. Apply?`;
 }
 
 function localMaxMin(msg, headers, sheetData, wantMax) {
@@ -353,7 +615,7 @@ function localChart(headers, lastRow) {
   return {
     action_type: "create_chart",
     params: { data_range: dataRange, chart_type: "ColumnClustered", title: "Chart" },
-    preview_text: `Create a column chart from ${dataRange}.`,
+    preview_text: `Build a column chart from your data and drop it next to the table. Apply?`,
     confidence: 0.8,
   };
 }
@@ -369,7 +631,7 @@ function localSort(msg, headers, lastRow) {
   return {
     action_type: "sort_range",
     params: { range, sort_column: colIndex, ascending },
-    preview_text: `Sort ${range} by '${label}' (${ascending ? "ascending" : "descending"}).`,
+    preview_text: `Sort the table by ${label}, ${ascending ? "smallest first" : "biggest first"}. Apply?`,
     confidence: 0.85,
   };
 }
@@ -380,7 +642,7 @@ function localFormat(headers) {
   return {
     action_type: "format_cells",
     params: { range, bold: true, background: "#4472C4", font_color: "#FFFFFF" },
-    preview_text: `Make ${range} bold, blue background, white text.`,
+    preview_text: `Style the header row with a blue background, white bold text. Apply?`,
     confidence: 0.85,
   };
 }
@@ -464,7 +726,7 @@ function renderThinking() {
   return el;
 }
 
-// Preview card with Apply / Cancel buttons — the core "preview before execute" pattern.
+// Preview card with Apply / Cancel buttons, the core "preview before execute" pattern.
 function renderActionCard(response) {
   const card = document.createElement("div");
   card.className = "action-card";
@@ -495,6 +757,7 @@ function renderActionCard(response) {
     cancelBtn.disabled = true;
     try {
       await applyAction(response);
+      recordAppliedAction(response._userMessage, response);
       preview.textContent = `Done. ${response.preview_text}`;
       label.textContent = "applied";
       label.style.color = "#1a7f37";
@@ -586,9 +849,24 @@ async function applyFormatCells({ range, bold, background, font_color }) {
 async function applyCreateChart({ data_range, chart_type, title }) {
   await Excel.run(async (ctx) => {
     const sheet = ctx.workbook.worksheets.getActiveWorksheet();
+    const usedRange = sheet.getUsedRangeOrNullObject(true);
+    usedRange.load(["address"]);
+    await ctx.sync();
+
     const source = sheet.getRange(data_range);
     const chart = sheet.charts.add(chart_type, source, Excel.ChartSeriesBy.auto);
     if (title) chart.title.text = title;
+
+    // Place the chart away from the data so it doesn't sit on top of the table.
+    const usedAddress = usedRange.isNullObject ? data_range : usedRange.address;
+    const bareUsed = String(usedAddress).includes("!")
+      ? usedAddress.split("!")[1]
+      : usedAddress;
+    const placement = computeChartPlacement(bareUsed);
+    const tl = sheet.getRange(placement.topLeft);
+    const br = sheet.getRange(placement.bottomRight);
+    chart.setPosition(tl, br);
+
     await ctx.sync();
   });
 }
@@ -600,7 +878,7 @@ async function applySortRange({ range, sort_column, ascending }) {
     target.sort.apply(
       [{ key: sort_column, ascending: Boolean(ascending) }],
       false, // matchCase
-      true,  // hasHeaders — we assume row 1 is headers
+      true,  // hasHeaders, we assume row 1 is headers
       Excel.SortOrientation.rows
     );
     await ctx.sync();
@@ -729,7 +1007,7 @@ function applyMockInsertFormula({ cell, formula }) {
   const td = findMockCell(cell);
   if (!td) throw new Error(`cell ${cell} is outside the mock sheet`);
   td.textContent = formula;
-  td.title = "Formula — would compute inside real Excel.";
+  td.title = "Formula, would compute inside real Excel.";
   flashCell(td);
 }
 

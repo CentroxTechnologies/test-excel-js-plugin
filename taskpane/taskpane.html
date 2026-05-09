@@ -19,47 +19,90 @@
     </div>
   </header>
 
-  <!-- Mode banner: swapped between "Connected to Excel" and "Browser Preview" at runtime. -->
-  <div id="mode-banner" class="mode-banner" hidden></div>
+  <nav class="tabs" role="tablist" aria-label="View">
+    <button class="tab tab-active" type="button" data-view="chat" role="tab" aria-selected="true">Chat</button>
+    <button class="tab" type="button" data-view="workflows" role="tab" aria-selected="false">Workflows</button>
+  </nav>
 
-  <!-- Mock spreadsheet — only rendered in browser preview mode. Editable cells. -->
-  <section id="mock-sheet-container" class="mock-sheet-container" hidden>
-    <div class="mock-sheet-header">
-      <span>Mock Spreadsheet</span>
-      <span class="mock-sheet-hint">Click a cell to set active. Edit values inline.</span>
+  <!-- ======== Chat view ======== -->
+  <section id="view-chat" class="view view-active" role="tabpanel">
+    <!-- Mode banner: swapped between "Connected to Excel" and "Browser Preview" at runtime. -->
+    <div id="mode-banner" class="mode-banner" hidden></div>
+
+    <!-- Recording banner: shown only while a workflow is being recorded. -->
+    <div id="recording-banner" class="recording-banner" hidden>
+      <span class="rec-dot" aria-hidden="true"></span>
+      <span class="rec-text">Recording. Applied actions become workflow steps.</span>
+      <span class="rec-counter" id="rec-counter">0 steps</span>
+      <button id="stop-recording" class="btn btn-secondary" type="button">Stop &amp; Save</button>
     </div>
-    <div class="mock-sheet-scroll">
-      <table id="mock-sheet" class="mock-sheet"></table>
+
+    <!-- Mock spreadsheet, only rendered in browser preview mode. Editable cells. -->
+    <section id="mock-sheet-container" class="mock-sheet-container" hidden>
+      <div class="mock-sheet-header">
+        <span>Mock Spreadsheet</span>
+        <span class="mock-sheet-hint">Click a cell to set active. Edit values inline.</span>
+      </div>
+      <div class="mock-sheet-scroll">
+        <table id="mock-sheet" class="mock-sheet"></table>
+      </div>
+    </section>
+
+    <div class="chat-toolbar">
+      <button id="record-btn" class="record-btn" type="button" aria-pressed="false">
+        <span class="rec-dot" aria-hidden="true"></span> Record workflow
+      </button>
+      <button class="coming-btn" type="button" data-feature="schedule">Schedule (soon)</button>
     </div>
+
+    <main id="chat" class="chat" aria-live="polite"></main>
+
+    <section class="suggestion-chips" id="suggestion-chips" aria-label="Quick prompts"></section>
+
+    <footer class="input-bar">
+      <textarea
+        id="input"
+        class="input"
+        rows="1"
+        placeholder="Try: build a quarterly budget"
+        aria-label="Type a command"
+      ></textarea>
+      <button id="send" class="send" type="button" aria-label="Send">Send</button>
+    </footer>
   </section>
 
-  <section class="coming-soon-row" aria-label="Upcoming features">
-    <button class="coming-btn" type="button" data-feature="workflow">
-      <span class="badge">🚧</span> Save as Workflow
-    </button>
-    <button class="coming-btn" type="button" data-feature="schedule">
-      <span class="badge">🚧</span> Schedule
-    </button>
-    <button class="coming-btn" type="button" data-feature="record">
-      <span class="badge">🚧</span> Record Macro
-    </button>
+  <!-- ======== Workflows view ======== -->
+  <section id="view-workflows" class="view" role="tabpanel" hidden>
+    <header class="workflows-header">
+      <h2>Saved Workflows</h2>
+      <p class="workflows-sub">Replay any workflow against the active sheet. Steps run in order, no AI re-call needed.</p>
+    </header>
+    <div id="workflows-list" class="workflows-list" aria-live="polite"></div>
+    <p id="workflows-empty" class="workflows-empty" hidden>
+      No workflows yet. On the <strong>Chat</strong> tab, click <strong>Record workflow</strong>, run a few commands, then <strong>Stop &amp; Save</strong>.
+    </p>
   </section>
 
-  <main id="chat" class="chat" aria-live="polite"></main>
+  <!-- ======== Save workflow modal ======== -->
+  <div id="save-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
+    <div class="modal">
+      <h3 id="save-modal-title">Save workflow</h3>
+      <p class="modal-sub" id="save-modal-stepcount">0 steps</p>
+      <label class="modal-field">
+        Name
+        <input id="save-name" type="text" placeholder="e.g. Monthly Sales Report" autocomplete="off" />
+      </label>
+      <label class="modal-field">
+        Description (optional)
+        <input id="save-desc" type="text" placeholder="What does this workflow do?" autocomplete="off" />
+      </label>
+      <div class="modal-actions">
+        <button id="save-cancel" class="btn btn-cancel" type="button">Discard</button>
+        <button id="save-confirm" class="btn btn-apply" type="button">Save</button>
+      </div>
+    </div>
+  </div>
 
-  <section class="suggestion-chips" id="suggestion-chips" aria-label="Quick prompts"></section>
-
-  <footer class="input-bar">
-    <textarea
-      id="input"
-      class="input"
-      rows="1"
-      placeholder="Try: build a quarterly budget"
-      aria-label="Type a command"
-    ></textarea>
-    <button id="send" class="send" type="button" aria-label="Send">Send</button>
-  </footer>
-
-  <script src="taskpane.js"></script>
+  <script type="module" src="taskpane.js"></script>
 </body>
 </html>
