@@ -14,6 +14,15 @@ npm-debug.log*
 .env.*
 !.env.example
 
+# Runtime data files
+backend/data/workflows.json
+backend/data/execution_log.json
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
 # Build artifacts / archives
 dist/
 build/

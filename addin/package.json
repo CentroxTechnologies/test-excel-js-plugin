@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Office.js Excel add-in that pairs with a FastAPI backend for AI-driven spreadsheet commands.",
   "private": true,
+  "type": "module",
   "scripts": {
     "cert": "office-addin-dev-certs install --days 365",
     "cert:path": "office-addin-dev-certs verify",

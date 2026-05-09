@@ -43,3 +43,59 @@ class ProcessResponse(BaseModel):
 
     # 0.0 to 1.0 confidence score. Placeholder today, will reflect LLM confidence later.
     confidence: float = 1.0
+
+
+# ---------- Workflow models ----------
+
+
+class WorkflowStepIn(BaseModel):
+    """A single step in a workflow as posted by the frontend."""
+
+    message: str = ""
+    action_type: str
+    params: dict[str, Any] = Field(default_factory=dict)
+    order: int | None = None
+    step_id: str | None = None
+
+
+class WorkflowCreate(BaseModel):
+    """Payload for POST /api/workflows."""
+
+    name: str
+    description: str = ""
+    steps: list[WorkflowStepIn]
+
+
+class WorkflowUpdate(BaseModel):
+    """Payload for PUT /api/workflows/{id}. All fields optional."""
+
+    name: str | None = None
+    description: str | None = None
+    steps: list[WorkflowStepIn] | None = None
+
+
+class WorkflowStepOut(BaseModel):
+    step_id: str
+    order: int
+    message: str
+    action_type: str
+    params: dict[str, Any] = Field(default_factory=dict)
+
+
+class Workflow(BaseModel):
+    id: str
+    name: str
+    description: str
+    created_at: str
+    updated_at: str
+    steps: list[WorkflowStepOut]
+    schedule: dict[str, Any] | None = None
+
+
+class WorkflowRunResult(BaseModel):
+    """One step's result when running a workflow."""
+
+    step_id: str | None = None
+    action_type: str
+    params: dict[str, Any] = Field(default_factory=dict)
+    preview_text: str = ""

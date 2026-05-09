@@ -1,0 +1,17 @@
+{
+  "name": "powerpair",
+  "version": "0.1.0",
+  "description": "PowerPair Excel add-in. Plain English commands turn into Excel formulas, charts, and bulk data manipulation.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test addin/tests/",
+    "test:backend": "cd backend && pytest -v",
+    "test:all": "npm run test && npm run test:backend"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CentroxTechnologies/test-excel-js-plugin"
+  }
+}
