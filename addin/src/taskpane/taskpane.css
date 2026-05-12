@@ -582,6 +582,16 @@ table.mock-sheet td.flash-green {
   padding: 20px;
 }
 
+/* The HTML `hidden` attribute must beat the flex display above. */
+.modal-backdrop[hidden],
+.mode-banner[hidden],
+.recording-banner[hidden],
+.mock-sheet-container[hidden],
+.view[hidden],
+.workflows-empty[hidden] {
+  display: none !important;
+}
+
 .modal {
   background: #fff;
   border-radius: 10px;
