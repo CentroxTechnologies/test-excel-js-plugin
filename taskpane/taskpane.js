@@ -157,13 +157,21 @@ function wireRecording() {
   const stopBtn = document.getElementById("stop-recording");
   recordBtn.addEventListener("click", () => {
     if (recording) {
-      // Hitting "Record" while already recording is treated as Stop & Save.
-      openSaveModal();
+      handleStopClick();
     } else {
       startRecording();
     }
   });
-  stopBtn.addEventListener("click", openSaveModal);
+  stopBtn.addEventListener("click", handleStopClick);
+}
+
+function handleStopClick() {
+  if (recordedSteps.length === 0) {
+    renderSystemMessage("Stopped recording. No actions were applied yet, so nothing to save.");
+    stopRecordingDiscard();
+    return;
+  }
+  openSaveModal();
 }
 
 function startRecording() {
@@ -195,8 +203,11 @@ function recordAppliedAction(message, response) {
 }
 
 function updateRecCounter() {
+  const n = recordedSteps.length;
   const counter = document.getElementById("rec-counter");
-  if (counter) counter.textContent = `${recordedSteps.length} step${recordedSteps.length === 1 ? "" : "s"}`;
+  if (counter) counter.textContent = `${n} step${n === 1 ? "" : "s"}`;
+  const stopBtn = document.getElementById("stop-recording");
+  if (stopBtn) stopBtn.textContent = n === 0 ? "Stop" : "Stop & Save";
 }
 
 // ---------- Save workflow modal ----------
@@ -232,6 +243,11 @@ async function submitSaveModal() {
   const description = document.getElementById("save-desc").value.trim();
   if (!name) {
     document.getElementById("save-name").focus();
+    return;
+  }
+  if (recordedSteps.length === 0) {
+    closeSaveModal();
+    renderSystemMessage("Nothing to save: record at least one applied action first.");
     return;
   }
   try {
